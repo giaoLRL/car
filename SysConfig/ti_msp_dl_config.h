@@ -120,9 +120,9 @@ extern "C" {
 #define GPIO_I2C0_IOMUX_SDA                                       (IOMUX_PINCM3)
 #define GPIO_I2C0_IOMUX_SDA_FUNC                        IOMUX_PINCM3_PF_I2C0_SDA
 #define GPIO_I2C0_SCL_PORT                                                 GPIOA
-#define GPIO_I2C0_SCL_PIN                                          DL_GPIO_PIN_1
-#define GPIO_I2C0_IOMUX_SCL                                       (IOMUX_PINCM2)
-#define GPIO_I2C0_IOMUX_SCL_FUNC                        IOMUX_PINCM2_PF_I2C0_SCL
+#define GPIO_I2C0_SCL_PIN                                         DL_GPIO_PIN_31
+#define GPIO_I2C0_IOMUX_SCL                                       (IOMUX_PINCM6)
+#define GPIO_I2C0_IOMUX_SCL_FUNC                        IOMUX_PINCM6_PF_I2C0_SCL
 
 
 /* Defines for UART0 */
@@ -162,6 +162,12 @@ extern "C" {
 
 
 
+/* Port definition for Pin Group SENSOR_PORTA */
+#define SENSOR_PORTA_PORT                                                (GPIOA)
+
+/* Defines for SENSOR_IN3: GPIOA.7 with pinCMx 14 on package pin 49 */
+#define SENSOR_PORTA_SENSOR_IN3_PIN                              (DL_GPIO_PIN_7)
+#define SENSOR_PORTA_SENSOR_IN3_IOMUX                            (IOMUX_PINCM14)
 /* Port definition for Pin Group PORTA */
 #define PORTA_PORT                                                       (GPIOA)
 
@@ -228,12 +234,6 @@ extern "C" {
 /* Defines for SENSOR_IN7: GPIOB.26 with pinCMx 57 on package pin 28 */
 #define SENSOR_PORTB_SENSOR_IN7_PIN                             (DL_GPIO_PIN_26)
 #define SENSOR_PORTB_SENSOR_IN7_IOMUX                            (IOMUX_PINCM57)
-/* Port definition for Pin Group SENSOR_PORTA */
-#define SENSOR_PORTA_PORT                                                (GPIOA)
-
-/* Defines for SENSOR_IN3: GPIOA.7 with pinCMx 14 on package pin 49 */
-#define SENSOR_PORTA_SENSOR_IN3_PIN                              (DL_GPIO_PIN_7)
-#define SENSOR_PORTA_SENSOR_IN3_IOMUX                            (IOMUX_PINCM14)
 
 
 
@@ -245,6 +245,7 @@ void SYSCFG_DL_init(void);
 void SYSCFG_DL_initPower(void);
 void SYSCFG_DL_GPIO_init(void);
 void SYSCFG_DL_SYSCTL_init(void);
+void SYSCFG_DL_SYSCTL_CLK_init(void);
 void SYSCFG_DL_MOTOR_TIM_init(void);
 void SYSCFG_DL_CONTROL_TIM_init(void);
 void SYSCFG_DL_I2C0_init(void);

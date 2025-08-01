@@ -12,6 +12,9 @@
 #include "Motor.hpp"
 
 /* === BEGIN OF Global Variables ===*/
+// 走一次直线编码器大概的自增量
+const uint32_t averageEncoderIncreaseNum = 120u;
+
 uint8_t cycleNumber = 1; // 记录运行次数
 typedef enum
 {
@@ -20,14 +23,16 @@ typedef enum
 } CarState_EnumTypedef;
 CarState_EnumTypedef carState = STATE_SETTING;
 
-static TaskHandle_t printLogTask_handle;
+static TaskHandle_t slotFunctionTask_handle;
 static TaskHandle_t blinkTask_handle;
 static TaskHandle_t mainTask_handle;
+static TaskHandle_t printLogTask_handle;
 
 /* === END OF Global Variables ===*/
 
 /* === BEGIN OF GraySensor === */
 /* 读取灰度传感器，由于代码简单就直接Static inline掉了 */
+/* 反正静态内联函数性能高一点 */
 __STATIC_INLINE uint8_t GraySensor_readGPIO()
 {
     return \
@@ -143,14 +148,14 @@ extern uint8_t flagButtonPressed;
 
 static void slotFunction_ButtonClicked()
 {
-    uart_printf("Button clicked!\r\n");
+    // uart_printf("Button clicked!\r\n");
     if(carState == STATE_SETTING) cycleNumber = (cycleNumber)%6+1;
 }
 
 
 static void slotFunction_ButtonHolded()
 {
-    uart_printf("Button holded!\r\n");
+    // uart_printf("Button holded!\r\n");
     if(carState == STATE_SETTING) carState = STATE_START_LINE_FOLLOW;
     // 只有在停止循线之后才能停下
     // else if(carState == STATE_START_LINE_FOLLOW) carState = STATE_SETTING;
@@ -243,6 +248,9 @@ static void lineFollowTask(uint8_t num)
     float feedbackSpeedRPM;
     uint8_t cornerCnt = 0;
     uint8_t maxCnt = num * 4; // 经过角点 = 圈数 * 4
+    uint32_t t0=0,t1=0,t2=0;
+    // 先获取一次FreeRTOS的Tick
+    t0 = pdTICKS_TO_MS(xTaskGetTickCount());
     while (true)
     {
         graySensor_GPIOValues = GraySensor_readGPIO();
@@ -260,15 +268,27 @@ static void lineFollowTask(uint8_t num)
 
             // 平滑转弯
             motorControl_setSpeed_DiffMode(40,60);
-            vTaskDelay(pdMS_TO_TICKS(1000));
-            motorControl_setSpeed_DiffMode(0,0);
-            vTaskDelay(pdMS_TO_TICKS(25));
+            vTaskDelay(pdMS_TO_TICKS(950));
+            // motorControl_setSpeed_DiffMode(0,0);
+            // vTaskDelay(pdMS_TO_TICKS(25));
             // motorControl_setSpeed_DiffMode(0,0);
             // motorControl_setSpeed_DiffMode(0,0);
+            if(cornerCnt == 0)
+            {
+                t1 = xTaskGetTickCount();
+                uart_printf("T1 Encoder1 value: %d\r\n",Encoders_getCounter(ENCODER_ID_0));
+                uart_printf("T1 Encoder2 value: %d\r\n",Encoders_getCounter(ENCODER_ID_1));
+            }
+            else if(cornerCnt == 1)
+            {
+                t2 = xTaskGetTickCount();
+                uart_printf("T2 Encoder1 value: %d\r\n",Encoders_getCounter(ENCODER_ID_0));
+                uart_printf("T2 Encoder2 value: %d\r\n",Encoders_getCounter(ENCODER_ID_1));
+            }
             cornerCnt += 1;
             // 暂且忽略转向先写循线
             // goto ignore_turning;
-            uart_printf("Turn left. Corner cnt = %d.\r\n",cornerCnt);
+            // uart_printf("Turn left. Corner cnt = %d.\r\n",cornerCnt);
         }
         else
         {
@@ -288,8 +308,10 @@ static void lineFollowTask(uint8_t num)
         // motorControl_setSpeed_DiffMode(30,0);
         vTaskDelay(pdMS_TO_TICKS(20));
     }
-    // 最后再循线1.5秒停止，大概停在黑线中央
-    for(i=0;i<75;i++)
+    // 最后再循线一段秒停止，大概停在黑线中央
+    // 这个时间按前面运行的时间估算
+    uint8_t finalCycles = (t2 + t0 - 2 * t1) / 20;
+    for(i=0;i<finalCycles;i++)
     {
         graySensor_Bias = GraySensor_getBias();
         feedbackSpeedRPM = lineFollowPID.calc(graySensor_Bias)*60;
@@ -331,8 +353,28 @@ static void mainTask(void *args)
 
 /* === END OF mainTask === */
 
+/* === BEGIN OF printLogTask === */
+
+static void printLogTask(void *args)
+{
+    while (true)
+    {
+        uart_printf(" ===== LOG TASK ===== \r\n");
+        uart_printf("Current heap free size: %d bytes.\r\n",xPortGetFreeHeapSize());
+        vTaskDelay(pdMS_TO_TICKS(5000));
+    }
+    
+}
+
+/* === END OF printLogTask === */
+
 int main()
 {
+    // 据我个人测试下来TI板卡特有的抽象问题
+    // 上电延迟一段时间直到时钟稳定为止
+    // 相当于延迟20ms
+    volatile uint32_t waitTicks = 64000;
+    while(waitTicks--);
     SYSCFG_DL_init();
     // 复位编码器计数器，使能编码器中断
     Encoders_resetAllCounters();
@@ -344,8 +386,9 @@ int main()
 
     
     
-    xTaskCreate(slotFunctionTask,"slotFunctionTask",0x80,NULL,configMAX_PRIORITIES-2,&printLogTask_handle);
+    xTaskCreate(slotFunctionTask,"slotFunctionTask",0x80,NULL,configMAX_PRIORITIES-2,&slotFunctionTask_handle);
     xTaskCreate(blinkTask,"blinkTask",0x80,NULL,configMAX_PRIORITIES-2,&blinkTask_handle);
     xTaskCreate(mainTask,"mainTask",0x80,NULL,configMAX_PRIORITIES-1,&mainTask_handle);
+    xTaskCreate(printLogTask,"printLogTask",0x80,NULL,configMAX_PRIORITIES-3,&printLogTask_handle);
     vTaskStartScheduler();
 }

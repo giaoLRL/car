@@ -58,6 +58,7 @@ SYSCONFIG_WEAK void SYSCFG_DL_init(void)
     SYSCFG_DL_UART0_init();
     SYSCFG_DL_UART1_init();
     SYSCFG_DL_SYSTICK_init();
+    SYSCFG_DL_SYSCTL_CLK_init();
     /* Ensure backup structures have no valid state */
 	gMOTOR_TIMBackup.backupRdy 	= false;
 
@@ -142,6 +143,10 @@ SYSCONFIG_WEAK void SYSCFG_DL_GPIO_init(void)
     DL_GPIO_initPeripheralInputFunction(
         GPIO_UART1_IOMUX_RX, GPIO_UART1_IOMUX_RX_FUNC);
 
+    DL_GPIO_initDigitalInputFeatures(SENSOR_PORTA_SENSOR_IN3_IOMUX,
+		 DL_GPIO_INVERSION_DISABLE, DL_GPIO_RESISTOR_NONE,
+		 DL_GPIO_HYSTERESIS_DISABLE, DL_GPIO_WAKEUP_DISABLE);
+
     DL_GPIO_initDigitalOutput(PORTA_USER_LED_IOMUX);
 
     DL_GPIO_initDigitalOutput(PORTA_MOTOR_STDBY_IOMUX);
@@ -198,10 +203,6 @@ SYSCONFIG_WEAK void SYSCFG_DL_GPIO_init(void)
 		 DL_GPIO_INVERSION_DISABLE, DL_GPIO_RESISTOR_NONE,
 		 DL_GPIO_HYSTERESIS_DISABLE, DL_GPIO_WAKEUP_DISABLE);
 
-    DL_GPIO_initDigitalInputFeatures(SENSOR_PORTA_SENSOR_IN3_IOMUX,
-		 DL_GPIO_INVERSION_DISABLE, DL_GPIO_RESISTOR_NONE,
-		 DL_GPIO_HYSTERESIS_DISABLE, DL_GPIO_WAKEUP_DISABLE);
-
     DL_GPIO_clearPins(GPIOA, PORTA_MOTOR_STDBY_PIN |
 		PORTA_MOTOR_B1_PIN |
 		PORTA_MOTOR_B2_PIN);
@@ -233,7 +234,7 @@ static const DL_SYSCTL_SYSPLLConfig gSYSPLLConfig = {
 	.rDivClk1               = 0,
 	.rDivClk0               = 0,
 	.enableCLK2x            = DL_SYSCTL_SYSPLL_CLK2X_DISABLE,
-	.enableCLK1             = DL_SYSCTL_SYSPLL_CLK1_DISABLE,
+	.enableCLK1             = DL_SYSCTL_SYSPLL_CLK1_ENABLE,
 	.enableCLK0             = DL_SYSCTL_SYSPLL_CLK0_ENABLE,
 	.sysPLLMCLK             = DL_SYSCTL_SYSPLL_MCLK_CLK0,
 	.sysPLLRef              = DL_SYSCTL_SYSPLL_REF_HFCLK,
@@ -249,6 +250,9 @@ SYSCONFIG_WEAK void SYSCFG_DL_SYSCTL_init(void)
 
     
 	DL_SYSCTL_setSYSOSCFreq(DL_SYSCTL_SYSOSC_FREQ_BASE);
+	/* Set default configuration */
+	DL_SYSCTL_disableHFXT();
+	DL_SYSCTL_disableSYSPLL();
     DL_SYSCTL_setHFCLKSourceHFXTParams(DL_SYSCTL_HFXT_RANGE_32_48_MHZ,0, false);
     DL_SYSCTL_configSYSPLL((DL_SYSCTL_SYSPLLConfig *) &gSYSPLLConfig);
     DL_SYSCTL_setULPCLKDivider(DL_SYSCTL_ULPCLK_DIV_2);
@@ -260,6 +264,23 @@ SYSCONFIG_WEAK void SYSCFG_DL_SYSCTL_init(void)
     NVIC_SetPriority(GPIOB_INT_IRQn, 0);
 
 }
+SYSCONFIG_WEAK void SYSCFG_DL_SYSCTL_CLK_init(void) {
+    while ((DL_SYSCTL_getClockStatus() & (DL_SYSCTL_CLK_STATUS_SYSPLL_GOOD
+		 | DL_SYSCTL_CLK_STATUS_HFCLK_GOOD
+		 | DL_SYSCTL_CLK_STATUS_HSCLK_GOOD
+		 | DL_SYSCTL_CLK_STATUS_LFOSC_GOOD))
+	       != (DL_SYSCTL_CLK_STATUS_SYSPLL_GOOD
+		 | DL_SYSCTL_CLK_STATUS_HFCLK_GOOD
+		 | DL_SYSCTL_CLK_STATUS_HSCLK_GOOD
+		 | DL_SYSCTL_CLK_STATUS_LFOSC_GOOD))
+	{
+		/* Ensure that clocks are in default POR configuration before initialization.
+		* Additionally once LFXT is enabled, the internal LFOSC is disabled, and cannot
+		* be re-enabled other than by executing a BOOTRST. */
+		;
+	}
+}
+
 
 
 /*

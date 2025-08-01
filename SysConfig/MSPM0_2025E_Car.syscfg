@@ -45,8 +45,14 @@ gate8.enable = true;
 const multiplier2         = system.clockTree["PLL_QDIV"];
 multiplier2.multiplyValue = 4;
 
+const mux2       = system.clockTree["CANCLKMUX"];
+mux2.inputSelect = "CANCLKMUX_PLLCLK1_OUT";
+
 const mux4       = system.clockTree["EXHFMUX"];
 mux4.inputSelect = "EXHFMUX_XTAL";
+
+const mux5       = system.clockTree["EXLFMUX"];
+mux5.inputSelect = "EXLFMUX_XTAL";
 
 const mux8       = system.clockTree["HSCLKMUX"];
 mux8.inputSelect = "HSCLKMUX_SYSPLL0";
@@ -194,7 +200,9 @@ PWM1.ccp1PinConfig.hideOutputInversion  = scripting.forceWrite(false);
 PWM1.ccp1PinConfig.onlyInternalResistor = scripting.forceWrite(false);
 PWM1.ccp1PinConfig.passedPeripheralType = scripting.forceWrite("Digital");
 
-SYSCTL.clockTreeEn = true;
+SYSCTL.clockTreeEn           = true;
+SYSCTL.validateClkStatus     = true;
+SYSCTL.forceDefaultClkConfig = true;
 scripting.suppress("For best practices when the CPUCLK is running at 32MHz and above, clear the flash status bit using DL_FlashCTL_executeClearStatus\\(\\) before executing any flash operation\\. Otherwise there may be false positives\\.", SYSCTL);
 
 SYSTICK.periodEnable      = true;

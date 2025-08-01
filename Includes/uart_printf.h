@@ -12,7 +12,7 @@ extern "C" {
 
 int uart_printf(const char *fmt, ...);
 void uart_print_float(float value, uint8_t precision);
-
+int remote_uart_printf(const char *fmt, ...);
 #ifdef __cplusplus
 }
 #endif
