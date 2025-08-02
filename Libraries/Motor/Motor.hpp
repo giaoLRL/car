@@ -17,25 +17,34 @@ class Motor
         pid(pid){
             encoderID = id;
             gearRatio = ratio;
+            prevFeedback = 0;
         };
         void setExpectedSpeed(float rpm)
         {
-            expectedRPM = rpm;
+            expectedRPM = rpm * 0.6f + expectedRPM * 0.4f;
+            prevRPM = expectedRPM;
             pid.SetTarget(expectedRPM);
         }
         // 更新占空比，这个应当定时被调用
+        // 既然定时调用可以尝试添加一个低通滤波
         inline float updateDutyCycle(float dt)
         {
             uint16_t currentCounter = Encoders_getCounter(encoderID);
             int16_t diffCounter = currentCounter - prevCounter;
             float currentRPM = (float)(diffCounter) / gearRatio / dt * 60.0;
-            float feedback = pid.calc(currentRPM);
+            // 对反馈添加一个一阶低通滤波
+            float feedback = \
+                pid.calc(currentRPM) * 0.8f +\
+                prevFeedback * 0.2f;
+            prevFeedback = feedback;
             prevCounter = currentCounter;
             return __CONSTRUCT_VALUE(feedback,-1,1);
         }
     private:
         PID pid; 
         uint16_t prevCounter;
+        float prevFeedback;
+        float prevRPM;
         float expectedRPM;
         float gearRatio;
         EncodersID_EnumTypedef encoderID;

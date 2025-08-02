@@ -227,7 +227,7 @@ static void blinkTask(void *arg)
 
 /* === BEGIN OF lineFollowTask === */
 
-#define COMMON_SPEED_RPM    63
+#define COMMON_SPEED_RPM    67
 
 // 循线PID对象
 PID lineFollowPID(PID::PID_type::position_type,
@@ -271,14 +271,26 @@ static void lineFollowTask(uint8_t num)
             // vTaskDelay(pdMS_TO_TICKS(900));
 
             // 更平滑转弯
-            motorControl_setSpeed_DiffMode(60,60);
-            vTaskDelay(pdMS_TO_TICKS(300));
-            motorControl_setSpeed_DiffMode(50,90);
-            vTaskDelay(pdMS_TO_TICKS(300));
-            motorControl_setSpeed_DiffMode(50,40);
-            vTaskDelay(pdMS_TO_TICKS(300));
-            motorControl_setSpeed_DiffMode(65,0);
-            vTaskDelay(pdMS_TO_TICKS(300));
+            for(i=0;i<15;i++)
+            {
+                motorControl_setSpeed_DiffMode(60,60);
+                vTaskDelay(pdMS_TO_TICKS(20));
+            }
+            for(i=0;i<25;i++)
+            {
+                motorControl_setSpeed_DiffMode(40,72);
+                vTaskDelay(pdMS_TO_TICKS(15));
+            }
+            for(i=0;i<15;i++)
+            {
+                motorControl_setSpeed_DiffMode(50,40);
+                vTaskDelay(pdMS_TO_TICKS(20));
+            }
+            for(i=0;i<15;i++)
+            {
+                motorControl_setSpeed_DiffMode(65,0);
+                vTaskDelay(pdMS_TO_TICKS(20));
+            }
             // motorControl_setSpeed_DiffMode(0,0);
             // vTaskDelay(pdMS_TO_TICKS(25));
             // motorControl_setSpeed_DiffMode(0,0);
@@ -328,7 +340,12 @@ static void lineFollowTask(uint8_t num)
         motorControl_setSpeed_DiffMode(COMMON_SPEED_RPM,feedbackSpeedRPM);
         vTaskDelay(pdMS_TO_TICKS(20));
     }
-    // 执行完毕后立即停止电机
+    // 执行完毕后缓慢停止电机
+    for(i=0;i<45;i++)
+    {
+        motorControl_setSpeed_DiffMode(45-i,0);
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
     motorControl_setSpeed_DiffMode(0,0);
 }
 
