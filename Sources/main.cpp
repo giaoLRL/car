@@ -207,7 +207,7 @@ static void blinkTask(void *arg)
                 DL_GPIO_clearPins(PORTA_PORT,PORTA_USER_LED_PIN);
                 vTaskDelay(pdMS_TO_TICKS(100));
                 DL_GPIO_setPins(PORTA_PORT,PORTA_USER_LED_PIN);
-                vTaskDelay(pdMS_TO_TICKS(100));
+                vTaskDelay(pdMS_TO_TICKS(200));
             }
             vTaskDelay(pdMS_TO_TICKS(1000));
             break;
@@ -227,7 +227,7 @@ static void blinkTask(void *arg)
 
 /* === BEGIN OF lineFollowTask === */
 
-#define COMMON_SPEED_RPM    90
+#define COMMON_SPEED_RPM    63
 
 // 循线PID对象
 PID lineFollowPID(PID::PID_type::position_type,
@@ -267,8 +267,18 @@ static void lineFollowTask(uint8_t num)
             // vTaskDelay(pdMS_TO_TICKS(950));
 
             // 平滑转弯
-            motorControl_setSpeed_DiffMode(40,60);
-            vTaskDelay(pdMS_TO_TICKS(950));
+            // motorControl_setSpeed_DiffMode(40,60);
+            // vTaskDelay(pdMS_TO_TICKS(900));
+
+            // 更平滑转弯
+            motorControl_setSpeed_DiffMode(60,60);
+            vTaskDelay(pdMS_TO_TICKS(300));
+            motorControl_setSpeed_DiffMode(50,90);
+            vTaskDelay(pdMS_TO_TICKS(300));
+            motorControl_setSpeed_DiffMode(50,40);
+            vTaskDelay(pdMS_TO_TICKS(300));
+            motorControl_setSpeed_DiffMode(65,0);
+            vTaskDelay(pdMS_TO_TICKS(300));
             // motorControl_setSpeed_DiffMode(0,0);
             // vTaskDelay(pdMS_TO_TICKS(25));
             // motorControl_setSpeed_DiffMode(0,0);
@@ -310,7 +320,7 @@ static void lineFollowTask(uint8_t num)
     }
     // 最后再循线一段秒停止，大概停在黑线中央
     // 这个时间按前面运行的时间估算
-    uint8_t finalCycles = (t2 + t0 - 2 * t1) / 20;
+    uint8_t finalCycles = (t2 + t0 - 2 * t1 + 300) / 20;
     for(i=0;i<finalCycles;i++)
     {
         graySensor_Bias = GraySensor_getBias();
