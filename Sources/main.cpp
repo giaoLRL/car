@@ -231,7 +231,7 @@ static void blinkTask(void *arg)
 
 // 循线PID对象
 PID lineFollowPID(PID::PID_type::position_type,
-        0.5,
+        1,
         0.0,
         0.0,
         1,
@@ -271,9 +271,9 @@ static void lineFollowTask(uint8_t num)
             // vTaskDelay(pdMS_TO_TICKS(900));
 
             // 更平滑转弯
-            for(i=0;i<15;i++)
+            for(i=0;i<18;i++)
             {
-                motorControl_setSpeed_DiffMode(60,60);
+                motorControl_setSpeed_DiffMode(50,50);
                 vTaskDelay(pdMS_TO_TICKS(20));
             }
             for(i=0;i<25;i++)
@@ -316,7 +316,7 @@ static void lineFollowTask(uint8_t num)
         {
             // 根据偏置正常进行循线即可
             // ignore_turning:
-            feedbackSpeedRPM = lineFollowPID.calc(graySensor_Bias)*60;
+            feedbackSpeedRPM = lineFollowPID.calc(graySensor_Bias)*30;
             motorControl_setSpeed_DiffMode(COMMON_SPEED_RPM,feedbackSpeedRPM);
         }
         if(cornerCnt == maxCnt)
@@ -336,7 +336,7 @@ static void lineFollowTask(uint8_t num)
     for(i=0;i<finalCycles;i++)
     {
         graySensor_Bias = GraySensor_getBias();
-        feedbackSpeedRPM = lineFollowPID.calc(graySensor_Bias)*60;
+        feedbackSpeedRPM = lineFollowPID.calc(graySensor_Bias)*30;
         motorControl_setSpeed_DiffMode(COMMON_SPEED_RPM,feedbackSpeedRPM);
         vTaskDelay(pdMS_TO_TICKS(20));
     }
